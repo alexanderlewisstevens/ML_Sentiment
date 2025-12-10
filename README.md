@@ -1,9 +1,41 @@
-This Web application guides the user through the steps needed to analyze a time series data and fit the optimal sARIMA model to perform predictions. 
-This application has been built using Plotly Dash and Python
+# SARIMA Dashboard (Python + Dash)
 
-Live App link: https://gabria1.pythonanywhere.com/
+Interactive Plotly Dash application that guides you through SARIMA modeling for time series forecasting using Python. The current dependency set targets Python 3.11 (works on 3.10–3.12, but 3.11 is recommended locally and on Render).
 
-Supporting article: [available on Medium](https://medium.com/towards-data-science/time-series-data-analysis-with-sarima-and-dash-f4199c3fc092)
+- Live app: https://gabria1.pythonanywhere.com/
+- Original tutorial: [Time Series Data Analysis with SARIMA and Dash](https://medium.com/towards-data-science/time-series-data-analysis-with-sarima-and-dash-f4199c3fc092) on Towards Data Science. Please retain this attribution if you reuse or deploy.
 
+## Workflow in the app
+- **Data set up:** start from the built-in AirPassengers dataset (`data/AirPassengers.csv`). The app expects two columns (`Time`, `Values`) parsed as dates and numeric data.
+- **Stationarity checks:** apply log transforms and differencing, run the Augmented Dickey-Fuller test, and inspect ACF/PACF and Box-Cox plots.
+- **Model selection:** run a SARIMA `(p,d,q)(P,D,Q,m)` grid search scored by AIC with train/test split control.
+- **Prediction:** fit the selected model, visualize train/test forecasts with confidence intervals, and review residual ACF/PACF.
+
+## Run locally (Python 3.11)
+```bash
+git clone <your fork of this repo>
+cd sarima_dashboard
+python3.11 -m venv .venv
+source .venv/bin/activate  # Windows: .\.venv\Scripts\activate
+pip install --upgrade pip
+pip install -r requirements.txt
+python app.py
+```
+
+The server runs at http://localhost:8050 by default. Edit `app.py` to set `debug=True` while developing if you want auto-reload. The `.venv` folder is gitignored; if you use a different env name, add it to `.gitignore` to keep it out of commits.
+
+### Working with data
+- The default AirPassengers sample lives in `data/AirPassengers.csv`. Replace that file (keep the `Time` and `Values` headers) to experiment with your own series.
+- Restart the app after swapping data to ensure the in-memory dataset refreshes.
+
+## Deploy to Render
+- Option A: create a new Web Service, point at your repo, set build command `pip install -r requirements.txt`, start command `gunicorn app:server`, and env var `PYTHON_VERSION=3.11`. Render supplies `PORT`; gunicorn will bind to it automatically.
+- Option B: keep the provided `render.yaml` and let Render auto-detect it as a blueprint.
+
+## Project layout
+- `app.py` bootstraps the multi-page Dash app.
+- `pages/` contains the four guided steps described above.
+- `assets/` holds shared components (navigation, footer, styles).
+- `data/` contains the default time series sample.
 
 ![dash_app_step03](https://user-images.githubusercontent.com/57110246/236455995-a98416d9-57f3-4c6e-b41b-0583ba66c86d.gif)

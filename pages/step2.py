@@ -4,7 +4,6 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-from pmdarima.utils import diff
 from statsmodels.tsa.stattools import adfuller
 
 dash.register_page(__name__, name='2-Stationarity', title='SARIMA | 2-Stationarity')
@@ -14,6 +13,14 @@ from assets.acf_pacf_plots import acf_pacf
 
 _data_airp = pd.read_csv('data/AirPassengers.csv', usecols = [0,1], names=['Time','Values'], skiprows=1)
 _data_airp['Time'] = pd.to_datetime(_data_airp['Time'], errors='raise')
+
+
+def _diff(values, lag):
+    """Simple differencing helper to avoid extra deps."""
+    arr = np.asarray(values, dtype=float)
+    if lag <= 0 or lag >= len(arr):
+        return []
+    return list(arr[lag:] - arr[:-lag])
 
 ### PAGE LAYOUT ###############################################################################################################
 
@@ -158,15 +165,15 @@ def data_transform(_logtr, _d1check, _d1v, _d2check, _d2v, _d3check, _d3v):
             _data['Values'] = _data['Values'] + np.abs(_min_value) + 0.5
         _data['Values'] = list(np.log(_data['Values'])) # apply log transformation
     if _d1check and _d1v:
-        _dvalues = diff(list(_data['Values']), lag=_d1v, differences=1)
+        _dvalues = _diff(list(_data['Values']), lag=_d1v)
         _data = _data.iloc[_d1v:]
         _data['Values'] = _dvalues
     if _d2check and _d2v:
-        _dvalues = diff(list(_data['Values']), lag=_d2v, differences=1)
+        _dvalues = _diff(list(_data['Values']), lag=_d2v)
         _data = _data.iloc[_d2v:]
         _data['Values'] = _dvalues
     if _d3check and _d3v:
-        _dvalues = diff(list(_data['Values']), lag=_d3v, differences=1)
+        _dvalues = _diff(list(_data['Values']), lag=_d3v)
         _data = _data.iloc[_d3v:]
         _data['Values'] = _dvalues
     # Perform test
