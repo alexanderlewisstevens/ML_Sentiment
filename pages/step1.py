@@ -2,34 +2,54 @@ import dash
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
-
-dash.register_page(__name__, name='1-Data set up', title='SARIMA | 1-Data set up')
-
-from assets.fig_layout import my_figlayout, my_linelayout
-
-_data_airp = pd.read_csv('data/AirPassengers.csv', usecols = [0,1], names=['Time','Values'], skiprows=1)
-_data_airp['Time'] = pd.to_datetime(_data_airp['Time'], errors='raise')
-
+from ml_sentiment import evaluate_model, preprocess
+dash.register_page(__name__, name='1-Model Evaluation', title='Sentiment Analyzer | Model Evaluation')
+# Load and preprocess data
+df = pd.read_csv('data/train5.csv')
+df.columns = ['Sentiment', 'Text', 'Score']
+df['Text'] = df['Text'].astype(str).apply(preprocess)
+X = df['Text'].values
+y = df['Sentiment'].values
 ### PAGE LAYOUT ###############################################################################################################
-
 layout = dbc.Container([
     # title
     dbc.Row([
-        dbc.Col([html.H3(['Your dataset'])], width=12, className='row-titles')
+        dbc.Col([html.H3(['Model Evaluation'])], width=12, className='row-titles')
     ]),
-
     # data input
     dbc.Row([
         dbc.Col([], width = 3),
-        dbc.Col([html.P(['Select a dataset:'], className='par')], width=2),
+        dbc.Col([html.P(['Select a model:'], className='par')]),
         dbc.Col([
-            dcc.RadioItems(['Air passenger'], value = 'Air passenger', persistence=True, persistence_type='session', id='radio-dataset')
-        ], width=4),
-        dbc.Col([], width = 3)
+            dcc.RadioItems(
+                options=[
+                    {'label': 'Naive Bayes', 'value': 'Naive Bayes'},
+                    {'label': 'SVM', 'value': 'SVM'},
+                    {'label': 'VADER', 'value': 'VADER'}
+                ], 
+                value='Naive Bayes', 
+                persistence=True, 
+                persistence_type='session', 
+                id='radio-dataset',
+                inline=True
+            )
+        ], width=6),
+        dbc.Col([], width = 1)
     ], className='row-content'),
-
-    # raw data fig
+    # Accuracy metric
+    dbc.Row([
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.H6("Accuracy", className="text-muted"),
+                    html.H3(id='accuracy-display', children='0.00%', className='text-primary')
+                ])
+            ], className="text-center")
+        ], width=3, className="mx-auto")
+    ], className='row-content'),
+    # Confusion matrix fig
     dbc.Row([
         dbc.Col([], width = 2),
         dbc.Col([
@@ -39,24 +59,47 @@ layout = dbc.Container([
     ], className='row-content')
     
 ])
-
 ### PAGE CALLBACKS ###############################################################################################################
-
-# Update fig
+def create_confusion_matrix_figure(confusion, labels):
+    """Create a Plotly heatmap for the confusion matrix."""
+    fig = go.Figure(data=go.Heatmap(
+        z=confusion,
+        x=labels,
+        y=labels,
+        colorscale='Greens',
+        text=confusion,
+        texttemplate="%{text}",
+        textfont={"size": 16},
+        hovertemplate="Actual: %{y}<br>Predicted: %{x}<br>Count: %{z}<extra></extra>"
+    ))
+    
+    fig.update_layout(
+        title=dict(text="Confusion Matrix", font=dict(size=18), x=0.5, xanchor='center'),
+        xaxis_title="Predicted Label",
+        yaxis_title="Actual Label",
+        template="plotly_dark",
+        height=400,
+        margin=dict(l=50, r=50, t=80, b=50)
+    )
+    
+    return fig
+# Update fig and accuracy
 @callback(
     Output(component_id='fig-pg1', component_property='figure'),
+    Output(component_id='accuracy-display', component_property='children'),
     Input(component_id='radio-dataset', component_property='value')
 )
-def plot_data(value):
-    fig = None
-
-    if value == 'Air passenger':
-        _data = _data_airp
-
-    fig = go.Figure(layout=my_figlayout)
-    fig.add_trace(go.Scatter(x=_data['Time'], y=_data['Values'], line=dict()))
-
-    fig.update_layout(title='Dataset Linechart', xaxis_title='Time', yaxis_title='Values', height = 500)
-    fig.update_traces(overwrite=True, line=my_linelayout)
-
-    return fig
+def update_evaluation(model_type):
+    """Run the model evaluation and return the confusion matrix and accuracy."""
+    if model_type == 'VADER':
+        # Type 1 is for prebuilt VADER model
+        accuracy, precision, recall, confusion, f1 = evaluate_model(X, y, model_type, type=1, k=5)
+    else:
+        # Type 0 is for custom models
+        accuracy, precision, recall, confusion, f1 = evaluate_model(X, y, model_type, type=0, k=5)
+    
+    labels = ['Negative', 'Neutral', 'Positive']
+    fig = create_confusion_matrix_figure(confusion, labels)
+    accuracy_text = f"{accuracy:.2%}"
+    
+    return fig, accuracy_text
