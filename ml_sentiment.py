@@ -1,3 +1,5 @@
+import string
+
 import numpy as np
 import pandas as pd
 from sklearn.naive_bayes import MultinomialNB
@@ -7,14 +9,34 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LinearRegression
 
+import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.sentiment import SentimentIntensityAnalyzer
 
+# Ensure required NLTK corpora are present in any deployment (e.g., DigitalOcean)
+NLTK_RESOURCES = {
+    "stopwords": "corpora/stopwords",
+    "punkt": "tokenizers/punkt",
+    "wordnet": "corpora/wordnet",
+    "vader_lexicon": "sentiment/vader_lexicon",
+    "punkt_tab": "tokenizers/punkt_tab",
+}
+
+
+def ensure_nltk_resources():
+    for resource, path in NLTK_RESOURCES.items():
+        try:
+            nltk.data.find(path)
+        except LookupError:
+            nltk.download(resource, quiet=True)
+
+
+ensure_nltk_resources()
+
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
-import string
 
 def preprocess(text):
     text = str(text).translate(str.maketrans('', '', string.punctuation))

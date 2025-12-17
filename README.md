@@ -35,6 +35,8 @@ python -m venv .venv
 
 pip install --upgrade pip
 pip install -r requirements.txt
+# Pre-download NLTK data to speed up first run (optional; auto-downloads on startup if missing)
+python -m nltk.downloader stopwords punkt wordnet vader_lexicon punkt_tab
 python app.py
 ```
 
@@ -47,6 +49,10 @@ The server runs at http://localhost:8050 by default. Edit `app.py` to set `debug
 ## Deploy to Render
 - Option A: create a new Web Service, point at your repo, set build command `pip install -r requirements.txt`, start command `gunicorn app:server`, and env var `PYTHON_VERSION=3.11`. Render supplies `PORT`; gunicorn will bind to it automatically.
 - Option B: keep the provided `render.yaml` and let Render auto-detect it as a blueprint.
+
+## Deploy to DigitalOcean
+- Build command: `pip install -r requirements.txt` (add `python -m nltk.downloader stopwords punkt wordnet vader_lexicon punkt_tab` if you prefer to cache NLTK data during build).
+- Run command: `gunicorn app:server` (the app will also download missing NLTK resources on startup if needed).
 
 ## Project layout
 - `app.py` bootstraps the multi-page Dash app.
