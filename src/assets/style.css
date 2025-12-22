@@ -1,0 +1,169 @@
+/* Custom styles for Sentiment Analyzer Dashboard */
+
+/* Sidebar styling */
+.nav-pills .nav-link {
+    color: #adb5bd;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: rgba(99, 110, 250, 0.2);
+    color: #fff;
+}
+
+.nav-pills .nav-link.active {
+    background-color: #636EFA;
+    color: #fff;
+}
+
+/* Card styling */
+.card {
+    border-radius: 12px;
+    border: none;
+    background-color: #303030;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.card-header {
+    background-color: #404040;
+    border-bottom: 1px solid #505050;
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600;
+}
+
+/* Button styling */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Table styling */
+.table {
+    color: #e9ecef;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(99, 110, 250, 0.1);
+}
+
+/* Input styling */
+.form-control, .form-select {
+    background-color: #404040;
+    border-color: #505050;
+    color: #e9ecef;
+    border-radius: 8px;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: #505050;
+    border-color: #636EFA;
+    color: #fff;
+    box-shadow: 0 0 0 0.2rem rgba(99, 110, 250, 0.25);
+}
+
+/* Sample text items */
+.sample-text-item {
+    background-color: transparent;
+    border-color: #505050;
+    color: #adb5bd;
+    transition: all 0.2s ease;
+}
+
+.sample-text-item:hover {
+    background-color: rgba(0, 204, 150, 0.1);
+    border-color: #00CC96;
+    color: #fff;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 12px;
+    border: none;
+}
+
+/* Badge styling */
+.badge {
+    font-weight: 500;
+    padding: 6px 12px;
+}
+
+/* Blockquote styling */
+.blockquote {
+    border-left: 4px solid #636EFA;
+    padding-left: 1rem;
+    color: #adb5bd;
+}
+
+/* Spinner customization */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #303030;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #505050;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #636EFA;
+}
+
+/* Radio button styling */
+.form-check-input:checked {
+    background-color: #636EFA;
+    border-color: #636EFA;
+}
+
+/* Animation for results */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#evaluation-results, #prediction-results, #comparison-results {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .sidebar {
+        width: 100%;
+        position: relative;
+    }
+    
+    .content {
+        margin-left: 0 !important;
+    }
+}
