@@ -4,6 +4,31 @@ import dash_bootstrap_components as dbc
 
 dash.register_page(__name__, path='/', name='Home', title='Sentiment Analyzer | Home')
 
+import pandas as pd
+from ml_sentiment import evaluate_model, preprocess
+
+# Load and preprocess data for accuracy comparison
+df = pd.read_csv('data/train5.csv')
+df.columns = ['Sentiment', 'Text', 'Score']
+df['Text'] = df['Text'].astype(str).apply(preprocess)
+X = df['Text'].values
+y = df['Sentiment'].values
+
+# Evaluate both models
+vader_acc, *_ = evaluate_model(X, y, 'VADER', type=1, k=5)
+nb_acc, *_ = evaluate_model(X, y, 'Naive Bayes', type=0, k=5)
+
+# Determine which is best
+if nb_acc > vader_acc:
+    best_model = 'Naive Bayes'
+    diff = nb_acc - vader_acc
+elif vader_acc > nb_acc:
+    best_model = 'VADER'
+    diff = vader_acc - nb_acc
+else:
+    best_model = 'Both models are equal'
+    diff = 0
+
 layout = dbc.Container([
     # title
     dbc.Row([
@@ -24,6 +49,23 @@ layout = dbc.Container([
                     'Compare our model to the pre-built sentiment analyzer VADER.'], className='guide'),
             html.P([html.B('3) Test Your Own Text'), html.Br(),
                     'Enter your own text and see how the program classifies its sentiment.'], className='guide')
+        ], width=8),
+        dbc.Col([], width=2)
+    ]),
+    # Comparison row
+    dbc.Row([
+        dbc.Col([], width=2),
+        dbc.Col([
+            html.Div([
+                html.H5('Model Comparison: VADER vs Naive Bayes', className='mt-4'),
+                html.P([
+                    f"VADER Accuracy: {vader_acc:.2%} ", html.Br(),
+                    f"Naive Bayes Accuracy: {nb_acc:.2%} ", html.Br(),
+                    html.B(f"Most Accurate: {best_model}"),
+                    html.Br(),
+                    html.Span(f"Difference: {diff:.2%}" if diff != 0 else "No difference in accuracy.")
+                ], className='guide', style={'font-size': '1.1em'})
+            ])
         ], width=8),
         dbc.Col([], width=2)
     ])
