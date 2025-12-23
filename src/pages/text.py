@@ -8,11 +8,14 @@ from ml_sentiment import preprocess, evaluate_model, my_model, prebuilt_model, e
 dash.register_page(__name__, path='/text', name='Test Your Text', title='Sentiment Analyzer | Test Your Text')
 
 # Load and preprocess training data for model fitting
+
+# Load and preprocess training data for model fitting
 train_df = pd.read_csv('data/train5.csv')
 train_df.columns = ['Sentiment', 'Text', 'Score']
 train_df['Text'] = train_df['Text'].astype(str).apply(preprocess)
 X_train = train_df['Text'].values
 y_train = train_df['Sentiment'].values
+label_list = y_train.tolist()
 
 layout = dbc.Container([
     dbc.Row([
@@ -22,7 +25,11 @@ layout = dbc.Container([
         dbc.Col([], width=2),
         dbc.Col([
             html.P('Enter your text below and select a model to analyze its sentiment.'),
-            dcc.Textarea(id='user-text', style={'width': '100%', 'height': 100}, placeholder='Type your text here...'),
+            dcc.Textarea(
+                id='user-text',
+                style={'width': '100%', 'height': 100, 'color': 'black', 'backgroundColor': 'white'},
+                placeholder='Type your text here...'
+            ),
             html.Br(),
             dcc.RadioItems(
                 options=[
@@ -63,6 +70,8 @@ def analyze_text(n_clicks, user_text, model_choice):
         analyzer = SentimentIntensityAnalyzer()
         score = analyzer.polarity_scores(processed)['compound']
     else:
+        # For NB/SVM, use all unique labels for y_train
+        unique_labels = np.unique(label_list)
         pred = my_model(X_train, y_train, [processed], model_choice)[0]
         # Use emotion_score regression for intensity
         score = emotion_score(X_train, y_train, [processed])[0]
@@ -71,8 +80,8 @@ def analyze_text(n_clicks, user_text, model_choice):
     sentiment = sentiment_map.get(pred.lower(), pred)
     return dbc.Card([
         dbc.CardBody([
-            html.H5('Analysis Result'),
-            html.P(f'Sentiment: {sentiment}', style={'font-size': '1.2em'}),
-            html.P(f'Emotional Intensity Score: {score:.3f}', style={'font-size': '1.1em'}),
+            html.H5('Analysis Result', style={'color': 'white'}),
+            html.P(f'Sentiment: {sentiment}', style={'font-size': '1.2em', 'color': 'white'}),
+            html.P(f'Emotional Intensity Score: {score:.3f}', style={'font-size': '1.1em', 'color': 'white'}),
         ])
-    ], color='info', className='text-center')
+    ], style={'backgroundColor': '#444', 'border': 'none'}, className='text-center')
