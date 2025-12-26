@@ -34,7 +34,8 @@ layout = dbc.Container([
                     'backgroundColor': 'white', 'color': '#212529',
                     'border': '1px solid #ced4da', 'padding': '8px', 'borderRadius': '4px'
                 },
-                placeholder='Type your text here...'
+                placeholder='Type your text here...',
+                className='text-primary'
             ),
             html.Br(),
             dcc.RadioItems(
