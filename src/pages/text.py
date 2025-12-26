@@ -61,7 +61,7 @@ layout = dbc.Container([
                 id='user-text',
                 style={
                     'width': '100%', 'height': 120,
-                    'backgroundColor': 'white', 'color': '#212529',
+                    'backgroundColor': '#212529', 'color': 'white',
                     'border': '1px solid #ced4da', 'padding': '8px', 'borderRadius': '4px'
                 },
                 placeholder='Type your text here...'
@@ -143,7 +143,7 @@ def analyze_text(n_clicks, user_text, model_choice):
                     html.Strong('Emotional Intensity Score: '),
                     f'{float(score):.3f}'
                 ], style={'fontSize': '1.1em'}),
-                html.Small(f'Model: {model_choice}', className='text-muted')
+                html.Small(f'Model: {model_choice}')
             ])
         ], color=card_color, outline=True, className='text-center')
     
