@@ -29,8 +29,11 @@ layout = dbc.Container([
             html.P('Enter your text below and select a model to analyze its sentiment.'),
             dcc.Textarea(
                 id='user-text',
-                className='text-primary',
-                style={'width': '100%', 'height': 100, 'backgroundColor': 'white'},
+                style={
+                    'width': '100%', 'height': 120,
+                    'backgroundColor': 'white', 'color': '#212529',
+                    'border': '1px solid #ced4da', 'padding': '8px', 'borderRadius': '4px'
+                },
                 placeholder='Type your text here...'
             ),
             html.Br(),
@@ -81,8 +84,8 @@ def analyze_text(n_clicks, user_text, model_choice):
     sentiment = sentiment_map.get(pred.lower(), pred)
     return dbc.Card([
         dbc.CardBody([
-            html.H5('Analysis Result', style={'color': 'black'}),
-            html.P(f'Sentiment: {sentiment}', style={'font-size': '1.2em', 'color': 'black'}),
-            html.P(f'Emotional Intensity Score: {score:.3f}', style={'font-size': '1.1em', 'color': 'black'}),
+            html.H5('Analysis Result'),
+            html.P(f'Sentiment: {sentiment}', style={'font-size': '1.2em'}),
+            html.P(f'Emotional Intensity Score: {score:.3f}', style={'font-size': '1.1em'}),
         ])
-    ], style={'backgroundColor': '#f8f9fa', 'border': 'none'}, className='text-center')
+    ], color='info', className='text-center')
