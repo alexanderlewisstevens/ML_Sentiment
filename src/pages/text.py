@@ -14,8 +14,10 @@ train_df = pd.read_csv('data/train5.csv')
 train_df.columns = ['Sentiment', 'Text', 'Score']
 train_df['Text'] = train_df['Text'].astype(str).apply(preprocess)
 X_train = train_df['Text'].values
-y_train = train_df['Sentiment'].values
-label_list = y_train.tolist()
+# `y_train_sentiment` for classifier targets, `y_train_score` for regression intensity
+y_train_sentiment = train_df['Sentiment'].values
+y_train_score = pd.to_numeric(train_df['Score'], errors='coerce').fillna(0).values
+label_list = y_train_sentiment.tolist()
 
 layout = dbc.Container([
     dbc.Row([
@@ -70,18 +72,16 @@ def analyze_text(n_clicks, user_text, model_choice):
         analyzer = SentimentIntensityAnalyzer()
         score = analyzer.polarity_scores(processed)['compound']
     else:
-        # For NB/SVM, use all unique labels for y_train
-        unique_labels = np.unique(label_list)
-        pred = my_model(X_train, y_train, [processed], model_choice)[0]
-        # Use emotion_score regression for intensity
-        score = emotion_score(X_train, y_train, [processed])[0]
+        # For NB/SVM, use classifier labels and numeric scores for intensity
+        pred = my_model(X_train, y_train_sentiment, [processed], model_choice)[0]
+        score = emotion_score(X_train, y_train_score, [processed])[0]
     # Format output
     sentiment_map = {'positive': 'Positive', 'neutral': 'Neutral', 'negative': 'Negative'}
     sentiment = sentiment_map.get(pred.lower(), pred)
     return dbc.Card([
         dbc.CardBody([
-            html.H5('Analysis Result', style={'color': 'white'}),
-            html.P(f'Sentiment: {sentiment}', style={'font-size': '1.2em', 'color': 'white'}),
-            html.P(f'Emotional Intensity Score: {score:.3f}', style={'font-size': '1.1em', 'color': 'white'}),
+            html.H5('Analysis Result', style={'color': 'black'}),
+            html.P(f'Sentiment: {sentiment}', style={'font-size': '1.2em', 'color': 'black'}),
+            html.P(f'Emotional Intensity Score: {score:.3f}', style={'font-size': '1.1em', 'color': 'black'}),
         ])
-    ], style={'backgroundColor': '#444', 'border': 'none'}, className='text-center')
+    ], style={'backgroundColor': '#f8f9fa', 'border': 'none'}, className='text-center')
