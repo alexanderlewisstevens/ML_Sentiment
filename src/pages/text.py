@@ -29,7 +29,8 @@ layout = dbc.Container([
             html.P('Enter your text below and select a model to analyze its sentiment.'),
             dcc.Textarea(
                 id='user-text',
-                style={'width': '100%', 'height': 100, 'color': 'black', 'backgroundColor': 'white'},
+                className='text-primary',
+                style={'width': '100%', 'height': 100, 'backgroundColor': 'white'},
                 placeholder='Type your text here...'
             ),
             html.Br(),
