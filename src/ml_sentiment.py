@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import joblib
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_extraction.text import CountVectorizer
@@ -102,7 +102,7 @@ def train_and_cache_models(data_path=None, force=False):
     nb_model.fit(X_vec, y_sentiment)
     joblib.dump(nb_model, MODEL_PATHS["naive bayes"])
 
-    svm_model = SVC()
+    svm_model = LinearSVC(dual="auto", max_iter=5000, random_state=42)
     svm_model.fit(X_vec, y_sentiment)
     joblib.dump(svm_model, MODEL_PATHS["svm"])
 
@@ -238,7 +238,7 @@ def my_model(X_train, y_train, X_test, model_name):
     if normalized == "naive bayes":
         clf = MultinomialNB()
     elif normalized == "svm":
-        clf = SVC()
+        clf = LinearSVC(dual="auto", max_iter=5000, random_state=42)
     else:
         raise ValueError(f"Unknown model_name: {model_name}")
 
