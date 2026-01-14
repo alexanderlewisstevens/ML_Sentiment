@@ -6,7 +6,7 @@ Interactive Plotly Dash application that guides you through SARIMA modeling for 
 - Original tutorial: [Time Series Data Analysis with SARIMA and Dash](https://medium.com/towards-data-science/time-series-data-analysis-with-sarima-and-dash-f4199c3fc092) on Towards Data Science. Please retain this attribution if you reuse or deploy.
 
 ## Workflow in the app
-- **Data set up:** start from the built-in AirPassengers dataset (`data/AirPassengers.csv`). The app expects two columns (`Time`, `Values`) parsed as dates and numeric data.
+- **Data set up:** start from the built-in AirPassengers dataset (`src/data/AirPassengers.csv`). The app expects two columns (`Time`, `Values`) parsed as dates and numeric data.
 - **Stationarity checks:** apply log transforms and differencing, run the Augmented Dickey-Fuller test, and inspect ACF/PACF and Box-Cox plots.
 - **Model selection:** run a SARIMA `(p,d,q)(P,D,Q,m)` grid search scored by AIC with train/test split control.
 - **Prediction:** fit the selected model, visualize train/test forecasts with confidence intervals, and review residual ACF/PACF.
@@ -37,10 +37,19 @@ pip install --upgrade pip
 pip install -r requirements.txt
 # Pre-download NLTK data to speed up first run (optional; auto-downloads on startup if missing)
 python -m nltk.downloader stopwords punkt wordnet vader_lexicon punkt_tab
+# Pre-build cached models for faster runtime inference (recommended; done during cloud builds)
+python -m src.cache_models
 python -m src.app
 ```
 
 The server runs at http://localhost:8050 by default. Edit `src/app.py` to set `debug=True` while developing if you want auto-reload. The `.venv` folder is gitignored; if you use a different env name, add it to `.gitignore` to keep it out of commits.
+
+### VS Code tasks (macOS/Linux)
+If you use VS Code, there is a simple task setup in `.vscode/tasks.json` to automate the local workflow. The `Setup: Full local` task runs automatically on folder open; remove the `runOptions` block in `.vscode/tasks.json` if you want to opt out.
+- `Setup: Full local` creates the venv, installs requirements, downloads NLTK data, and builds cached models.
+- `App: Run (Dash)` starts the server with `python -m src.app`.
+
+Windows users should follow the manual commands above.
 
 ### Production-style local run
 If you want to mirror the DigitalOcean command locally, run:
@@ -54,7 +63,7 @@ gunicorn --chdir src --timeout 600 app:server --bind 0.0.0.0:${PORT:-8050} --wor
 
 ## Deploy to DigitalOcean
 - DigitalOcean App Platform: the included `app.yaml` is a ready-to-deploy spec. Point App Platform at this repo (`Distinction-Projects/ML_Sentiment`, branch `main`), confirm the detected spec, and deploy. Adjust the repo/branch in the manifest if your fork differs. The spec installs requirements, pre-downloads NLTK data, and starts `gunicorn --chdir src --timeout 600 app:server --bind 0.0.0.0:$PORT --worker-tmp-dir ${WORKER_TMP_DIR:-/tmp}` with Python 3.11 on a `basic-xxs` instance. A `.python-version` file pins Python 3.11 for the DO buildpack. `WORKER_TMP_DIR` defaults to `/dev/shm` (set in `app.yaml`) but the command falls back to `/tmp` if that path is absent (e.g., local macOS test).
-- Manual commands (if you prefer to enter them in the UI): build `pip install -r requirements.txt && python -m nltk.downloader stopwords punkt wordnet vader_lexicon punkt_tab`; run `gunicorn --chdir src --timeout 600 app:server --bind 0.0.0.0:$PORT --worker-tmp-dir ${WORKER_TMP_DIR:-/tmp}`.
+- Manual commands (if you prefer to enter them in the UI): build `pip install -r requirements.txt && python -m nltk.downloader stopwords punkt wordnet vader_lexicon punkt_tab && python -m src.cache_models`; run `gunicorn --chdir src --timeout 600 app:server --bind 0.0.0.0:$PORT --worker-tmp-dir ${WORKER_TMP_DIR:-/tmp}`.
 
 ## Project layout
 ```
@@ -63,6 +72,7 @@ src/
 ├── assets/              # Static assets (CSS, etc.)
 ├── components/          # Shared UI elements (nav, footer)
 ├── data/                # AirPassengers sample + sentiment training CSV
+├── models/              # Cached vectorizer + trained models (generated)
 ├── pages/               # Multi-page Dash views
 └── utils/               # Plot layout helpers, SARIMA utilities
 ```

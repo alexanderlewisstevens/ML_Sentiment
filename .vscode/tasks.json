@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Env: Create venv",
+      "type": "shell",
+      "command": "python3.11 -m venv .venv",
+      "problemMatcher": []
+    },
+    {
+      "label": "Env: Install deps",
+      "type": "shell",
+      "command": "source .venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt",
+      "problemMatcher": [],
+      "dependsOn": "Env: Create venv"
+    },
+    {
+      "label": "Env: Download NLTK data",
+      "type": "shell",
+      "command": "source .venv/bin/activate && python -m nltk.downloader stopwords punkt wordnet vader_lexicon punkt_tab",
+      "problemMatcher": [],
+      "dependsOn": "Env: Install deps"
+    },
+    {
+      "label": "Env: Cache models",
+      "type": "shell",
+      "command": "source .venv/bin/activate && python -m src.cache_models",
+      "problemMatcher": [],
+      "dependsOn": "Env: Download NLTK data"
+    },
+    {
+      "label": "Setup: Full local",
+      "dependsOn": [
+        "Env: Cache models"
+      ],
+      "problemMatcher": [],
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
+      "label": "App: Run (Dash)",
+      "type": "shell",
+      "command": "source .venv/bin/activate && python -m src.app",
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    }
+  ]
+}

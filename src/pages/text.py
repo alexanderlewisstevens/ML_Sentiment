@@ -6,34 +6,44 @@ Key fixes:
 3. Fixed callback to show errors properly
 """
 
+from pathlib import Path
+
 import dash
 from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
-import numpy as np
-import pandas as pd
-import traceback
 
-from ml_sentiment import preprocess, evaluate_model, my_model, prebuilt_model, emotion_score
+try:
+    from src.ml_sentiment import (
+        preprocess,
+        prebuilt_model,
+        vader_score,
+        predict_cached,
+        predict_score_cached,
+        DATA_PATH,
+    )
+except ModuleNotFoundError:
+    from ml_sentiment import (
+        preprocess,
+        prebuilt_model,
+        vader_score,
+        predict_cached,
+        predict_score_cached,
+        DATA_PATH,
+    )
 
 dash.register_page(__name__, path='/text', name='Test Your Text', title='Sentiment Analyzer | Test Your Text')
 
-# Load and preprocess training data with error handling
+# Validate training data availability for cache warmup
 DATA_LOADED = False
 DATA_ERROR = None
-X_train = np.array([])
-y_train_sentiment = np.array([])
-y_train_score = np.array([])
 
 try:
-    train_df = pd.read_csv('data/train5.csv')
-    train_df.columns = ['Sentiment', 'Text', 'Score']
-    train_df['Text'] = train_df['Text'].astype(str).apply(preprocess)
-    X_train = train_df['Text'].values
-    y_train_sentiment = train_df['Sentiment'].values
-    y_train_score = pd.to_numeric(train_df['Score'], errors='coerce').fillna(0).values
-    DATA_LOADED = True
+    data_path = Path(DATA_PATH)
+    DATA_LOADED = data_path.exists()
+    if not DATA_LOADED:
+        DATA_ERROR = f"Could not find '{data_path}'. Make sure the file exists."
 except FileNotFoundError:
-    DATA_ERROR = "Could not find 'data/train5.csv'. Make sure the file exists."
+    DATA_ERROR = f"Could not find '{data_path}'. Make sure the file exists."
 except Exception as e:
     DATA_ERROR = f"{type(e).__name__}: {str(e)}"
 
@@ -116,13 +126,11 @@ def analyze_text(n_clicks, user_text, model_choice):
         # Model prediction
         if model_choice == 'VADER':
             pred = prebuilt_model([processed])[0]
-            from nltk.sentiment import SentimentIntensityAnalyzer
-            analyzer = SentimentIntensityAnalyzer()
-            score = analyzer.polarity_scores(processed)['compound']
+            score = vader_score(processed)
         else:
-            # For NB/SVM
-            pred = my_model(X_train, y_train_sentiment, [processed], model_choice)[0]
-            score = emotion_score(X_train, y_train_score, [processed])[0]
+            # For NB/SVM use cached models to avoid retraining on each request
+            pred = predict_cached([processed], model_choice)[0]
+            score = predict_score_cached([processed])[0]
         
         # Format output
         sentiment_map = {'positive': 'Positive', 'neutral': 'Neutral', 'negative': 'Negative'}

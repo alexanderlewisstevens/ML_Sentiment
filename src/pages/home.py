@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import dash
 from dash import html
 import dash_bootstrap_components as dbc
@@ -5,10 +7,16 @@ import dash_bootstrap_components as dbc
 dash.register_page(__name__, path='/', name='Home', title='Sentiment Analyzer | Home')
 
 import pandas as pd
-from ml_sentiment import evaluate_model, preprocess
+try:
+    from src.ml_sentiment import evaluate_model, preprocess
+except ModuleNotFoundError:
+    from ml_sentiment import evaluate_model, preprocess
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATA_PATH = BASE_DIR / "data" / "train5.csv"
 
 # Load and preprocess data for accuracy comparison
-df = pd.read_csv('data/train5.csv')
+df = pd.read_csv(DATA_PATH)
 df.columns = ['Sentiment', 'Text', 'Score']
 df['Text'] = df['Text'].astype(str).apply(preprocess)
 X = df['Text'].values

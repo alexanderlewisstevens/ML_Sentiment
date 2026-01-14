@@ -1,7 +1,9 @@
 import string
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import joblib
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import SVC
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
@@ -38,6 +40,26 @@ ensure_nltk_resources()
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
+BASE_DIR = Path(__file__).resolve().parent
+DATA_PATH = BASE_DIR / "data" / "train5.csv"
+MODEL_DIR = BASE_DIR / "models"
+VECTORIZER_PATH = MODEL_DIR / "count_vectorizer.joblib"
+MODEL_PATHS = {
+    "naive bayes": MODEL_DIR / "naive_bayes.joblib",
+    "svm": MODEL_DIR / "svm.joblib",
+}
+SCORE_MODEL_PATH = MODEL_DIR / "score_regressor.joblib"
+_VADER_ANALYZER = None
+
+
+def _normalize_model_name(model_name):
+    name = str(model_name).strip().lower()
+    if name in ('naive bayes', 'naivebayes', 'nb', 'multinomialnb'):
+        return "naive bayes"
+    if name in ('svm', 'support vector machine', 'support-vector-machine'):
+        return "svm"
+    raise ValueError(f"Unknown model_name: {model_name}")
+
 def preprocess(text):
     text = str(text).translate(str.maketrans('', '', string.punctuation))
     text = text.lower()
@@ -54,6 +76,86 @@ def read_file(filename):
     df.columns = ['Sentiment','Text','Score']
     return df 
 
+
+def train_and_cache_models(data_path=None, force=False):
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    data_path = Path(data_path) if data_path else DATA_PATH
+    vectorizer_ready = VECTORIZER_PATH.exists()
+    models_ready = all(path.exists() for path in MODEL_PATHS.values())
+    score_ready = SCORE_MODEL_PATH.exists()
+
+    if not force and vectorizer_ready and models_ready and score_ready:
+        return
+
+    if not data_path.exists():
+        raise FileNotFoundError(f"Training data not found: {data_path}")
+
+    df = read_file(data_path)
+    df['Text'] = df['Text'].astype(str).apply(preprocess)
+
+    vectorizer = CountVectorizer()
+    X_vec = vectorizer.fit_transform(df['Text'].values)
+    joblib.dump(vectorizer, VECTORIZER_PATH)
+
+    y_sentiment = df['Sentiment'].values
+    nb_model = MultinomialNB()
+    nb_model.fit(X_vec, y_sentiment)
+    joblib.dump(nb_model, MODEL_PATHS["naive bayes"])
+
+    svm_model = SVC()
+    svm_model.fit(X_vec, y_sentiment)
+    joblib.dump(svm_model, MODEL_PATHS["svm"])
+
+    y_score = pd.to_numeric(df['Score'], errors='coerce').fillna(0).values
+    score_model = LinearRegression()
+    score_model.fit(X_vec, y_score)
+    joblib.dump(score_model, SCORE_MODEL_PATH)
+
+
+def load_cached_vectorizer(train_if_missing=True, data_path=None):
+    if not VECTORIZER_PATH.exists():
+        if train_if_missing:
+            train_and_cache_models(data_path=data_path)
+        else:
+            raise FileNotFoundError(f"Missing cached vectorizer: {VECTORIZER_PATH}")
+    return joblib.load(VECTORIZER_PATH)
+
+
+def load_cached_model(model_name, train_if_missing=True, data_path=None):
+    normalized = _normalize_model_name(model_name)
+    model_path = MODEL_PATHS[normalized]
+    if not model_path.exists():
+        if train_if_missing:
+            train_and_cache_models(data_path=data_path)
+        else:
+            raise FileNotFoundError(f"Missing cached model: {model_path}")
+    model = joblib.load(model_path)
+    vectorizer = load_cached_vectorizer(train_if_missing=train_if_missing, data_path=data_path)
+    return vectorizer, model
+
+
+def predict_cached(X_test, model_name, train_if_missing=True, data_path=None):
+    vectorizer, model = load_cached_model(model_name, train_if_missing=train_if_missing, data_path=data_path)
+    X_vec = vectorizer.transform(X_test)
+    return model.predict(X_vec)
+
+
+def load_cached_score_model(train_if_missing=True, data_path=None):
+    if not SCORE_MODEL_PATH.exists():
+        if train_if_missing:
+            train_and_cache_models(data_path=data_path)
+        else:
+            raise FileNotFoundError(f"Missing cached score model: {SCORE_MODEL_PATH}")
+    model = joblib.load(SCORE_MODEL_PATH)
+    vectorizer = load_cached_vectorizer(train_if_missing=train_if_missing, data_path=data_path)
+    return vectorizer, model
+
+
+def predict_score_cached(X_test, train_if_missing=True, data_path=None):
+    vectorizer, model = load_cached_score_model(train_if_missing=train_if_missing, data_path=data_path)
+    X_vec = vectorizer.transform(X_test)
+    return model.predict(X_vec)
+
 def emotion_score(X_train, y_train, X_test):
     vector = CountVectorizer()
     X_train2 = vector.fit_transform(X_train)
@@ -66,7 +168,7 @@ def emotion_score(X_train, y_train, X_test):
     return score
 
 def prebuilt_model(X_test):
-    analyzer = SentimentIntensityAnalyzer()
+    analyzer = get_vader_analyzer()
     predictions = []
     for i in X_test:
         score = analyzer.polarity_scores(i)
@@ -78,6 +180,18 @@ def prebuilt_model(X_test):
         else:
             predictions.append('neutral')
     return np.array(predictions)
+
+
+def get_vader_analyzer():
+    global _VADER_ANALYZER
+    if _VADER_ANALYZER is None:
+        _VADER_ANALYZER = SentimentIntensityAnalyzer()
+    return _VADER_ANALYZER
+
+
+def vader_score(text):
+    analyzer = get_vader_analyzer()
+    return analyzer.polarity_scores(text)['compound']
 
 def evaluate_model(X,y,model,type=0,k=5):
     skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=42)
@@ -120,10 +234,10 @@ def my_model(X_train, y_train, X_test, model_name):
     X_train2 = vector.fit_transform(X_train)
     X_test2 = vector.transform(X_test)
 
-    name = str(model_name).strip().lower()
-    if name in ('naive bayes', 'naivebayes', 'nb', 'multinomialnb'):
+    normalized = _normalize_model_name(model_name)
+    if normalized == "naive bayes":
         clf = MultinomialNB()
-    elif name in ('svm', 'support vector machine', 'support-vector-machine'):
+    elif normalized == "svm":
         clf = SVC()
     else:
         raise ValueError(f"Unknown model_name: {model_name}")
