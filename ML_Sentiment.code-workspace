@@ -2,9 +2,6 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "../dash-app-structure"
 		}
 	],
 	"settings": {}
